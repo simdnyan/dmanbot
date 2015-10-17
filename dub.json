@@ -1,0 +1,12 @@
+{
+	"name": "dmanbot",
+	"description": "Twitter bot written in D Programming Language.",
+	"copyright": "Copyright © 2015, Yoshinori Shimada",
+	"authors": ["simdnyan"],
+	"dependencies": {
+		"mysql-d": "~>0.3.1",
+		"twitter4d": "~>0.0.64",
+		"dyaml": "~>0.5.0"
+	},
+	"lflags": ["-L/usr/lib64/mysql"]
+}
