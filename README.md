@@ -1,4 +1,4 @@
-# dmanbot
+# [dmanbot](https://twitter.com/d_man_bot)
 
 Twitter bot written in D Programming Language.
 
@@ -17,12 +17,12 @@ Twitter bot written in D Programming Language.
 ### Edit config file
 
 1. `cp dmanbot.yaml.example dmanbot.yaml`
-2. Edit twitter API and mysql settings
+2. Edit `dmanbot.yaml`
 
 ### Create MySQL database and tables
 
 1. `create database dmanbot;`
-2. `create table dmabot.retweets (id bigint not null, primary key (id));`
+2. `create table dmanbot.retweets (id bigint not null, primary key (id));`
 3. `create table dmanbot.follow_requests (id bigint not null, primary key (id));`
 
 ### Build & Run
