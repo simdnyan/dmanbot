@@ -10,9 +10,10 @@ Twitter bot written in D Programming Language.
 
 ## Install
 
-1. Edit config File
+1. Edit config file
 2. Create MySQL database and tables
 3. Build & Run
+4. Honor D-man
 
 ### Edit config file
 

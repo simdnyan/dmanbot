@@ -4,6 +4,7 @@ import std.stdio,
        std.string,
        std.conv,
        std.json,
+       std.datetime,
        twitter4d,
        mysql.d,
        dyaml.all;
@@ -26,9 +27,8 @@ class DmanBot {
 
   JSONValue[] search(string q, ulong max_id) {
     auto request = [
-          "q":            q,
+           "q":           q,
            "count":       "100",
-           //"lang":        "ja",
            "result_type": "recent",
            "max_id":      max_id.to!string
          ];
@@ -39,7 +39,7 @@ class DmanBot {
       auto ret = twitter.request("GET", "search/tweets.json", request);
       return parseJSON(ret)["statuses"].array;
     } catch (Exception e) {
-      stderr.writefln("Catch %s. Can't get tweets. { \"q\": \"%s\", \"max_id\": \"%d\" }", e.msg, q, max_id);
+      stderr.writefln("[%s] Catch %s. Can't get tweets. { \"q\": \"%s\", \"max_id\": \"%d\" }", currentTime(), e.msg, q, max_id);
       return [];
     }
   }
@@ -52,7 +52,7 @@ class DmanBot {
         twitter.request("POST", format("statuses/retweet/%d.json", tweet_id));
         mysql.query("insert into retweets (id) values (?);", tweet_id);
       } catch (Exception e) {
-        stderr.writefln("Catch %s. Can't retweet. { \"tweet_id\": \"%d\"}", e.msg, tweet_id);
+        stderr.writefln("[%s] Catch %s. Can't retweet. { \"tweet_id\": \"%d\"}", currentTime(), e.msg, tweet_id);
         return false;
       }
     }
@@ -67,11 +67,24 @@ class DmanBot {
         twitter.request("POST", "friendships/create.json", ["user_id": user_id.to!string]);
         mysql.query("insert into follow_requests (id) values (?);", user_id);
       } catch (Exception e) {
-        stderr.writefln("Catch %s. Can't send a follow request. { \"user_id\": { \"%d\" }}", e.msg, user_id);
+        stderr.writefln("[%s] Catch %s. Can't send a follow request. { \"user_id\": { \"%d\" }}", currentTime(), e.msg, user_id);
         return false;
       }
     }
     return true;
+  }
+
+  private string currentTime(){
+    auto time = Clock.currTime();
+    return format(
+                   "%04d-%02d-%02d %02d:%02d:%02d",
+                   time.year,
+                   time.month,
+                   time.day,
+                   time.hour,
+                   time.minute,
+                   time.second
+                 );
   }
 
   private void initialize(Node config, bool flag) {

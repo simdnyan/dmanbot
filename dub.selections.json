@@ -1,0 +1,10 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"dunit": "1.0.10",
+		"mysql-d": "0.3.2",
+		"twitter4d": "0.0.64",
+		"dyaml": "0.5.2",
+		"tinyendian": "0.1.2"
+	}
+}
