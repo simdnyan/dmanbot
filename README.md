@@ -25,6 +25,7 @@ Twitter bot written in D Programming Language.
 1. `create database dmanbot;`
 2. `create table dmanbot.retweets (id bigint not null, primary key (id));`
 3. `create table dmanbot.follow_requests (id bigint not null, primary key (id));`
+4. `create table dmanbot.words (word varchar(255) not null, since_id bigint default 0 not null);`
 
 ### Build & Run
 
