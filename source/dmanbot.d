@@ -5,38 +5,40 @@ import std.stdio,
        std.conv,
        std.json,
        std.datetime,
+       std.typecons,
+       std.variant,
        core.stdc.stdlib,
        twitter4d,
-       mysql.d,
+       mysql,
        dyaml;
 
 class DmanBot {
 
   const ulong MAX_TWEET_ID = ~0L;
 
-  private Twitter4D twitter;
-  private Mysql     mysql;
-  private bool      dryrun;
-  private string[]  words;
+  private Twitter4D  twitter;
+  private Connection mysql;
+  private bool       dry_run;
+  private bool       do_not_post;
+  private string[]   words;
 
-  this (Node config, bool flag = false) {
-    initialize(config, flag);
+  this (Node config, bool dry_run = false, bool do_not_post = false) {
+    initialize(config, dry_run, do_not_post);
   }
 
-  this (string file, bool flag = false) {
+  this (string file, bool dry_run = false, bool do_not_post = false) {
     Node config = Loader(file).load();
-    initialize(config, flag);
+    initialize(config, dry_run, do_not_post);
   }
 
   void run(){
     foreach (string word; words) {
       ulong max_id = MAX_TWEET_ID;
 
-      auto words_rows = mysql.query("select * from words where word=?;", word);
-      ulong since_id = 0;
-      foreach (row; words_rows) {
-        since_id = row["since_id"].to!ulong;
-      }
+      Prepared prepared = prepare(mysql, "select since_id from words where word=?;");
+      prepared.setArgs(word);
+      Nullable!Row words_row = prepared.queryRow();
+      ulong since_id = words_row.isNull ? 0 : words_row[0].get!long;
 
       JSONValue[] statuses = [];
       while (true) {
@@ -48,7 +50,6 @@ class DmanBot {
       }
 
       foreach_reverse (status; statuses) {
-        if ("retweeted_status" in status.object) continue;
         ulong tweet_id  = status["id"].integer;
         auto tweet_text = status["text"].str;
         auto user       = status["user"];
@@ -56,18 +57,15 @@ class DmanBot {
         if (retweet(tweet_id)) {
           writefln("retweet: %d, %s, %s, %s", tweet_id, string_to_datetime(status["created_at"].str), user["screen_name"], tweet_text);
 
-          if (!dryrun && tweet_id > since_id) {
-            auto rows = mysql.query("select * from words where word=?;", word);
-            if (rows.length > 0) {
-              mysql.query("update words set since_id=? where word=?;", tweet_id, word);
-            } else {
-              mysql.query("insert into words (since_id, word) values (?, ?);", tweet_id, word);
-            }
+          if (!dry_run && tweet_id > since_id) {
+            Prepared insert = prepare(mysql, "insert into words (since_id, word) values (?, ?) on duplicate key update since_id = ?;");
+            insert.setArgs(tweet_id, word, tweet_id);
+            insert.exec();
             since_id = tweet_id;
           }
         }
         if (follow(user["id"].integer)) {
-          writefln("follow:  %s, @%s", user["name"].str, user["screen_name"].str);
+          writefln("follow: %s, @%s", user["name"].str, user["screen_name"].str);
         }
       }
     }
@@ -82,7 +80,7 @@ class DmanBot {
            "max_id":      max_id.to!string
          ];
 
-    if (dryrun) writefln("search:  %s", request);
+    if (dry_run) writefln("search: %s", request);
 
     try {
       auto ret = twitter.request("GET", "search/tweets.json", request);
@@ -95,12 +93,16 @@ class DmanBot {
   }
 
   bool retweet(ulong tweet_id) {
-    auto rows = mysql.query("select * from retweets where id=?;", tweet_id);
-    if (rows.length > 0) return false;
-    if (!dryrun) {
+    Prepared prepared = prepare(mysql, "select * from retweets where id=?;");
+    prepared.setArgs(tweet_id);
+    if (!prepared.queryRow().isNull) return false;
+    if (!dry_run) {
       try {
-        twitter.request("POST", format("statuses/retweet/%d.json", tweet_id));
-        mysql.query("insert into retweets (id) values (?);", tweet_id);
+        if (!do_not_post)
+          twitter.request("POST", format("statuses/retweet/%d.json", tweet_id));
+        Prepared insert = prepare(mysql, "insert into retweets (id) values (?);");
+        insert.setArgs(tweet_id);
+        insert.exec();
       } catch (Exception e) {
         stderr.writefln("[%s] Catch %s. Can't retweet. { \"tweet_id\": \"%d\"}", currentTime(), e.msg, tweet_id);
         return false;
@@ -110,12 +112,16 @@ class DmanBot {
   }
 
   bool follow(ulong user_id) {
-    auto rows = mysql.query("select * from follow_requests where id=?;", user_id);
-    if (rows.length > 0) return false;
-    if (!dryrun) {
+    Prepared prepared = prepare(mysql, "select * from follow_requests where id=?;");
+    prepared.setArgs(user_id);
+    if (!prepared.queryRow().isNull) return false;
+    if (!dry_run) {
       try {
-        twitter.request("POST", "friendships/create.json", ["user_id": user_id.to!string]);
-        mysql.query("insert into follow_requests (id) values (?);", user_id);
+        if (!do_not_post)
+          twitter.request("POST", "friendships/create.json", ["user_id": user_id.to!string]);
+        Prepared insert = prepare(mysql, "insert into follow_requests (id) values (?);");
+        insert.setArgs(user_id);
+        insert.exec();
       } catch (Exception e) {
         stderr.writefln("[%s] Catch %s. Can't send a follow request. { \"user_id\": { \"%d\" }}", currentTime(), e.msg, user_id);
         return false;
@@ -143,22 +149,23 @@ class DmanBot {
     return datetime.roll!"hours"(timezone);
   }
 
-  private void initialize(Node config, bool flag = false) {
+  private void initialize(Node config, bool dry_run = false, bool do_not_post = false) {
     initTwitter(config["twitter"]);
     initMySQL(config["mysql"]);
     foreach(string word; config["words"]) {
       words ~= word;
     }
-    dryrun = flag;
+    this.dry_run = dry_run;
+    this.do_not_post = do_not_post;
   }
 
   private void initMySQL(Node config) {
-    mysql = new Mysql(
+    mysql = new Connection(
       config["host"].as!string,
-      config["port"].as!uint,
       config["user"].as!string,
       config["password"].as!string,
-      config["database"].as!string
+      config["database"].as!string,
+      config["port"].as!ushort
     );
   }
 

@@ -4,9 +4,8 @@
 	"copyright": "Copyright © 2015, Yoshinori Shimada",
 	"authors": ["simdnyan"],
 	"dependencies": {
-		"mysql-d": "~>0.3.3",
+		"mysql-native": "~>1.1.4",
 		"twitter4d": "~>0.0.70",
 		"dyaml": "~>0.6.3"
-	},
-	"lflags": ["-L/usr/lib64/mysql"]
+	}
 }
