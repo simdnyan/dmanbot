@@ -8,7 +8,7 @@ import std.stdio,
        core.stdc.stdlib,
        twitter4d,
        mysql.d,
-       dyaml.all;
+       dyaml;
 
 class DmanBot {
 
