@@ -7,10 +7,11 @@
 		"libevent": "2.0.2+2.0.16",
 		"memutils": "0.4.9",
 		"mysql-native": "1.1.4",
+		"requests": "0.3.2",
 		"taggedalgebraic": "0.10.8",
 		"tinyendian": "0.1.2",
-		"twitter4d": "0.0.70",
+		"twitter4d": {"path":"twitter4d"},
 		"vibe-core": "1.3.0",
-		"vibe-d": "0.8.1"
+		"vibe-d": "0.7.32"
 	}
 }

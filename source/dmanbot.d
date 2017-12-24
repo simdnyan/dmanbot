@@ -8,6 +8,7 @@ import std.stdio,
        std.typecons,
        std.variant,
        core.stdc.stdlib,
+       requests,
        twitter4d,
        mysql,
        dyaml;
@@ -82,14 +83,18 @@ class DmanBot {
 
     if (dry_run) writefln("search: %s", request);
 
+    Response ret;
     try {
-      auto ret = twitter.request("GET", "search/tweets.json", request);
-      return parseJSON(ret)["statuses"].array;
+      ret = twitter.request("GET", "search/tweets.json", request);
+      if (ret.code != 200) {
+        throw new Exception(ret.responseBody.to!string);
+      }
     } catch (Exception e) {
       stderr.writefln("[%s] Catch %s. Can't get tweets. { \"q\": \"%s\", \"max_id\": \"%d\" }", currentTime(), e.msg, q, max_id);
       exit(1);
       assert(0);
     }
+    return parseJSON(ret.responseBody.to!string)["statuses"].array;
   }
 
   bool retweet(ulong tweet_id) {
@@ -98,8 +103,12 @@ class DmanBot {
     if (!prepared.queryRow().isNull) return false;
     if (!dry_run) {
       try {
-        if (!do_not_post)
-          twitter.request("POST", format("statuses/retweet/%d.json", tweet_id));
+        if (!do_not_post) {
+          Response ret;
+          ret = twitter.request("POST", format("statuses/retweet/%d.json", tweet_id));
+          if (ret.code != 200)
+            throw new Exception(ret.responseBody.to!string);
+        }
         Prepared insert = prepare(mysql, "insert into retweets (id) values (?);");
         insert.setArgs(tweet_id);
         insert.exec();
@@ -117,8 +126,12 @@ class DmanBot {
     if (!prepared.queryRow().isNull) return false;
     if (!dry_run) {
       try {
-        if (!do_not_post)
-          twitter.request("POST", "friendships/create.json", ["user_id": user_id.to!string]);
+        if (!do_not_post) {
+          Response ret;
+          ret = twitter.request("POST", "friendships/create.json", ["user_id": user_id.to!string]);
+          if (ret.code != 200)
+            throw new Exception(ret.responseBody.to!string);
+        }
         Prepared insert = prepare(mysql, "insert into follow_requests (id) values (?);");
         insert.setArgs(user_id);
         insert.exec();

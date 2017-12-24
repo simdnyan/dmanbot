@@ -5,7 +5,7 @@
 	"authors": ["simdnyan"],
 	"dependencies": {
 		"mysql-native": "~>1.1.4",
-		"twitter4d": "~>0.0.70",
+		"twitter4d": { "path": "./twitter4d" },
 		"dyaml": "~>0.6.3"
 	}
 }
