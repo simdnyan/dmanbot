@@ -4,7 +4,7 @@
 	"copyright": "Copyright © 2015, Yoshinori Shimada",
 	"authors": ["simdnyan"],
 	"dependencies": {
-		"mysql-native": "~>1.1.4",
+		"mysql-native": "~>1.2.0",
 		"twitter4d": { "path": "./twitter4d" },
 		"dyaml": "~>0.6.3"
 	}
