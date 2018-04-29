@@ -22,6 +22,7 @@ class DmanBot {
   private bool       dry_run;
   private bool       do_not_post;
   private string[]   words;
+  private string     banned;
 
   this (Node config, bool dry_run = false, bool do_not_post = false) {
     initialize(config, dry_run, do_not_post);
@@ -74,7 +75,7 @@ class DmanBot {
 
   JSONValue[] search(string q, ulong max_id, ulong since_id) {
     auto request = [
-           "q":           format("\"%s\"", q.replace(" ", "\" \"")),
+           "q":           format("\"%s\"", q.replace(" ", "\" \"")) ~ banned,
            "count":       "100",
            "result_type": "recent",
            "since_id":    since_id.to!string,
@@ -168,6 +169,10 @@ class DmanBot {
     foreach(string word; config["words"]) {
       words ~= word;
     }
+    if ("banned" in config)
+      foreach(string word; config["banned"]) {
+        banned ~= " -" ~ word;
+      }
     this.dry_run = dry_run;
     this.do_not_post = do_not_post;
   }
