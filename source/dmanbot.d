@@ -174,10 +174,11 @@ class DmanBot {
     foreach(string word; config["words"]) {
       words ~= word;
     }
-    if ("banned" in config)
+    if ("banned" in config) {
       foreach(string word; config["banned"]) {
-        banned ~= " -" ~ word;
+        banned ~= format(" -\"%s\"", word.replace(" ", "\" \""));
       }
+    }
     this.dry_run = dry_run;
     this.do_not_post = do_not_post;
   }
