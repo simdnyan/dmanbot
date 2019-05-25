@@ -7,11 +7,16 @@ import std.stdio,
        std.datetime,
        std.typecons,
        std.variant,
-       core.stdc.stdlib,
-       requests,
-       twitter4d,
-       mysql,
-       dyaml;
+       core.stdc.stdlib;
+
+import dyaml.loader: Loader;
+import dyaml.node: Node;
+import mysql.commands : exec, queryRow;
+import mysql.connection: Connection, prepare;
+import mysql.prepared: Prepared;
+import mysql.result: Row;
+import requests: Response;
+import twitter4d: Twitter4D;
 
 class DmanBot {
 
@@ -29,7 +34,7 @@ class DmanBot {
   }
 
   this (string file, bool dry_run = false, bool do_not_post = false) {
-    Node config = Loader(file).load();
+    Node config = Loader.fromFile(file).load();
     initialize(config, dry_run, do_not_post);
   }
 
@@ -37,9 +42,9 @@ class DmanBot {
     foreach (string word; words) {
       ulong max_id = MAX_TWEET_ID;
 
-      Prepared prepared = prepare(mysql, "select since_id from words where word=?;");
+      Prepared prepared = prepare(this.mysql, "select since_id from words where word=?;");
       prepared.setArgs(word);
-      Nullable!Row words_row = prepared.queryRow();
+      Nullable!Row words_row = queryRow(this.mysql, prepared);
       ulong since_id = words_row.isNull ? 0 : words_row[0].get!long;
 
       JSONValue[] statuses = [];
@@ -60,9 +65,9 @@ class DmanBot {
           writefln("retweet: %d, %s, %s, %s", tweet_id, string_to_datetime(status["created_at"].str), user["screen_name"], tweet_text);
 
           if (!dry_run && tweet_id > since_id) {
-            Prepared insert = prepare(mysql, "insert into words (since_id, word) values (?, ?) on duplicate key update since_id = ?;");
+            Prepared insert = prepare(this.mysql, "insert into words (since_id, word) values (?, ?) on duplicate key update since_id = ?;");
             insert.setArgs(tweet_id, word, tweet_id);
-            insert.exec();
+            exec(this.mysql, insert);
             since_id = tweet_id;
           }
         }
@@ -99,9 +104,9 @@ class DmanBot {
   }
 
   bool retweet(ulong tweet_id) {
-    Prepared prepared = prepare(mysql, "select * from retweets where id=?;");
+    Prepared prepared = prepare(this.mysql, "select * from retweets where id=?;");
     prepared.setArgs(tweet_id);
-    if (!prepared.queryRow().isNull) return false;
+    if (!queryRow(this.mysql, prepared).isNull) return false;
     if (!dry_run) {
       try {
         if (!do_not_post) {
@@ -110,9 +115,9 @@ class DmanBot {
           if (ret.code != 200)
             throw new Exception(ret.responseBody.to!string);
         }
-        Prepared insert = prepare(mysql, "insert into retweets (id) values (?);");
+        Prepared insert = prepare(this.mysql, "insert into retweets (id) values (?);");
         insert.setArgs(tweet_id);
-        insert.exec();
+        exec(this.mysql, insert);
       } catch (Exception e) {
         stderr.writefln("[%s] Catch %s. Can't retweet. { \"tweet_id\": \"%d\"}", currentTime(), e.msg, tweet_id);
         return false;
@@ -122,9 +127,9 @@ class DmanBot {
   }
 
   bool follow(ulong user_id) {
-    Prepared prepared = prepare(mysql, "select * from follow_requests where id=?;");
+    Prepared prepared = prepare(this.mysql, "select * from follow_requests where id=?;");
     prepared.setArgs(user_id);
-    if (!prepared.queryRow().isNull) return false;
+    if (!queryRow(this.mysql, prepared).isNull) return false;
     if (!dry_run) {
       try {
         if (!do_not_post) {
@@ -133,9 +138,9 @@ class DmanBot {
           if (ret.code != 200)
             throw new Exception(ret.responseBody.to!string);
         }
-        Prepared insert = prepare(mysql, "insert into follow_requests (id) values (?);");
+        Prepared insert = prepare(this.mysql, "insert into follow_requests (id) values (?);");
         insert.setArgs(user_id);
-        insert.exec();
+        exec(this.mysql, insert);
       } catch (Exception e) {
         stderr.writefln("[%s] Catch %s. Can't send a follow request. { \"user_id\": { \"%d\" }}", currentTime(), e.msg, user_id);
         return false;
@@ -178,7 +183,7 @@ class DmanBot {
   }
 
   private void initMySQL(Node config) {
-    mysql = new Connection(
+    this.mysql = new Connection(
       config["host"].as!string,
       config["user"].as!string,
       config["password"].as!string,
