@@ -1,25 +1,25 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"botan": "1.12.10",
+		"botan": "1.12.18",
 		"botan-math": "1.0.3",
-		"cachetools": "0.1.2",
-		"diet-ng": "1.5.0",
+		"cachetools": "0.3.1",
+		"diet-ng": "1.7.4",
 		"dyaml": "0.7.1",
-		"eventcore": "0.8.42",
-		"libasync": "0.8.4",
+		"eventcore": "0.9.9",
+		"libasync": "0.8.6",
 		"libevent": "2.0.2+2.0.16",
-		"memutils": "0.4.13",
+		"memutils": "1.0.4",
 		"mir-linux-kernel": "1.0.1",
 		"mysql-native": "2.3.0",
 		"openssl": "1.1.6+1.0.1g",
-		"requests": "1.0.8",
+		"requests": "1.0.15",
 		"stdx-allocator": "2.77.5",
-		"taggedalgebraic": "0.11.4",
+		"taggedalgebraic": "0.11.18",
 		"tinyendian": "0.2.0",
-		"twitter4d": {"path":"twitter4d"},
+		"twitter4d": {"version":"72142f69173fb1914263eaff3f830b786a6cd6e0","repository":"git+https://github.com/simdnyan/twitter4d.git"},
 		"unit-threaded": "0.7.55",
-		"vibe-core": "1.6.2",
-		"vibe-d": "0.8.5"
+		"vibe-core": "1.10.2",
+		"vibe-d": "0.8.6"
 	}
 }
