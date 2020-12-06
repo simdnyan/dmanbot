@@ -4,8 +4,13 @@
 	"copyright": "Copyright © 2015, Yoshinori Shimada",
 	"authors": ["simdnyan"],
 	"dependencies": {
-		"mysql-native": "~>1.1.4",
-		"twitter4d": { "path": "./twitter4d" },
-		"dyaml": "~>0.6.3"
+		"dyaml": "~>0.7.1",
+		"mysql-native": "~>2.3.0",
+		"requests": "~>1.0.8",
+		"vibe-d": "~>0.8.5",
+		"twitter4d": {
+			"repository": "git+https://github.com/simdnyan/twitter4d.git",
+			"version": "72142f69173fb1914263eaff3f830b786a6cd6e0"
+		}
 	}
 }
